@@ -6,13 +6,16 @@ workflow evaluate_deep_variant{
     File uncompressed_ref
     File alignment_bam
     String model_cpkt
-    String output
+    String output_dir
+    String example_dir
 
     call find_variants {
         input:
             alignment_bam = alignment_bam,
             reference_fa_gz = reference_fa_gz,
-            model_cpkt = model_cpkt
+            model_cpkt = model_cpkt,
+            output_dir = output_dir,
+            example_dir = example_dir
     }
 
     call evaluate_vcf {
@@ -20,11 +23,12 @@ workflow evaluate_deep_variant{
             ground_truth_vcf = ground_truth_vcf,
             predicted_vcf = find_variants.predicted_vcf,
             ground_truth_bed = ground_truth_bed,
-            uncompressed_ref = uncompressed_ref 
+            uncompressed_ref = uncompressed_ref,
+            output_dir = output_dir
     }
 
     output {
-        File out = output + "evaluate_vcf.out"
+        File out = output_dir + "evaluate_vcf.out"
     }
 }
 
@@ -33,7 +37,8 @@ task find_variants{
     File alignment_bam
     File reference_fa_gz
     String model_cpkt
-    String output
+    String output_dir
+    String example_dir
 
     command {
 
@@ -41,18 +46,18 @@ task find_variants{
             --mode calling \
             --ref ${reference_fa_gz} \
             --reads ${alignment_bam} \
-            --examples output.examples.tfrecord \
+            --examples ${example_dir}output.examples.tfrecord
 
 
         ./opt/deepvariant/bin/call_variants \
-            --outfile call_variants_output.tfrecord \
-            --examples output.examples.tfrecord \
-            --checkpoint ${model_cpkt}+"model.cpkt"
+            --outfile ${example_dir}call_variants_output.tfrecord \
+            --examples ${example_dir}output.examples.tfrecord \
+            --checkpoint ${model_cpkt}model.cpkt
 
         ./opt/deepvariant/bin/postprocess_variants \
             --ref ${reference_fa_gz} \
-            --infile call_variants_output.tfrecord \
-            --outfile ${output}+"output.vcf"
+            --infile ${example_dir}call_variants_output.tfrecord \
+            --outfile ${output_dir}output.vcf
 
     }
 
@@ -61,7 +66,7 @@ task find_variants{
     }
 
     output {
-        File predicted_vcf = ${output}"output.vcf"
+        File predicted_vcf = output_dir +"output.vcf"
     }
 }
 
@@ -71,6 +76,7 @@ task evaluate_vcf{
     File predicted_vcf
     File ground_truth_bed
     File uncompressed_ref
+    String output_dir
 
     command {
 
@@ -87,6 +93,6 @@ task evaluate_vcf{
     }
 
     output {
-        File out = ${output}"eval.output"
+        File out = output_dir + "eval.output"
     }
 }
