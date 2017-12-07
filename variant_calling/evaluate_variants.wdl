@@ -5,9 +5,9 @@ workflow evaluate_deep_variant{
     File reference_fa_gz
     File uncompressed_ref
     File alignment_bam
-    String model_cpkt
-    String output_dir
-    String example_dir
+    File model_cpkt
+    File output_dir
+    File example_dir
 
     call find_variants {
         input:
@@ -36,28 +36,28 @@ task find_variants{
 
     File alignment_bam
     File reference_fa_gz
-    String model_cpkt
-    String output_dir
-    String example_dir
+    File model_cpkt
+    File output_dir
+    File example_dir
 
     command {
 
-        ./opt/deepvariant/bin/make_examples \
+        /opt/deepvariant/bin/make_examples \
             --mode calling \
             --ref ${reference_fa_gz} \
             --reads ${alignment_bam} \
-            --examples ${example_dir}output.examples.tfrecord
+            --examples ${example_dir}/output.examples.tfrecord
 
 
-        ./opt/deepvariant/bin/call_variants \
+        /opt/deepvariant/bin/call_variants \
             --outfile ${example_dir}call_variants_output.tfrecord \
-            --examples ${example_dir}output.examples.tfrecord \
-            --checkpoint ${model_cpkt}model.cpkt
+            --examples ${example_dir}/output.examples.tfrecord \
+            --checkpoint ${model_cpkt}/model.cpkt
 
-        ./opt/deepvariant/bin/postprocess_variants \
+        /opt/deepvariant/bin/postprocess_variants \
             --ref ${reference_fa_gz} \
-            --infile ${example_dir}call_variants_output.tfrecord \
-            --outfile ${output_dir}output.vcf
+            --infile ${example_dir}/call_variants_output.tfrecord \
+            --outfile ${output_dir}/output.vcf
 
     }
 
@@ -66,7 +66,7 @@ task find_variants{
     }
 
     output {
-        File predicted_vcf = output_dir +"output.vcf"
+        File predicted_vcf = output_dir+"output.vcf"
     }
 }
 
@@ -76,7 +76,7 @@ task evaluate_vcf{
     File predicted_vcf
     File ground_truth_bed
     File uncompressed_ref
-    String output_dir
+    File output_dir
 
     command {
 
@@ -93,6 +93,6 @@ task evaluate_vcf{
     }
 
     output {
-        File out = output_dir + "eval.output"
+        File out = output_dir+"eval.output"
     }
 }
