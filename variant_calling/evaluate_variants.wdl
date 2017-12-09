@@ -19,20 +19,22 @@ workflow evaluate_deep_variant{
     call call_variants {
         input:
             example_dir = example_dir,
-            model_dir = model_dir
+            model_dir = model_dir,
+            input_file = make_examples.out
     }
 
     call postprocess {
         input:
              reference_fa_gz = reference_fa_gz,
              example_dir = example_dir,
-             output_dir = output_dir
+             output_dir = output_dir,
+             input_file = call_variants.out
     }
 
     call evaluate_vcf {
         input:
             ground_truth_vcf = ground_truth_vcf,
-            predicted_vcf = find_variants.predicted_vcf,
+            predicted_vcf = postprocess.out,
             ground_truth_bed = ground_truth_bed,
             uncompressed_ref = uncompressed_ref,
             output_dir = output_dir
@@ -53,8 +55,9 @@ task make_examples{
         /opt/deepvariant/bin/make_examples \
             --mode calling \
             --ref ${reference_fa_gz}/ucsc.hg19.chr20.unittest.fasta.gz \
-            --reads ${alignment_bam} \
-            --examples ${example_dir}/output.examples.tfrecord
+            --reads ${reference_fa_gz}/NA12878_S1.chr20.10_10p1mb.bam \
+            --examples ${example_dir}/output.examples.tfrecord \
+            --regions "chr20:10,000,000-10,010,000"
     }
 
     runtime {
@@ -70,12 +73,13 @@ task call_variants{
     
     File example_dir
     File model_dir
+    File input_file
 
     command {
         
         /opt/deepvariant/bin/call_variants \
             --outfile ${example_dir}/call_variants_output.tfrecord \
-            --examples ${example_dir}/output.examples.tfrecord \
+            --examples ${input_file} \
             --checkpoint ${model_dir}/model.cpkt
     }
 
@@ -84,7 +88,7 @@ task call_variants{
     }
 
     output {
-        File out = 
+        File out = example_dir + "call_variants_output.tfrecord"
     }
 }
 
@@ -93,11 +97,12 @@ task postprocess {
     File reference_fa_gz
     File example_dir
     File output_dir
+    File input_file
 
     command {
         /opt/deepvariant/bin/postprocess_variants \
             --ref ${reference_fa_gz}/ucsc.hg19.chr20.unittest.fasta.gz \
-            --infile ${example_dir}/call_variants_output.tfrecord \
+            --infile ${input_file} \
             --outfile ${output_dir}/output.vcf
     }
 
@@ -106,7 +111,7 @@ task postprocess {
     }
 
     output {
-        File outfile = output_dir+"output.vcf"
+        File out = output_dir+"output1.vcf"
     }
 }
         
