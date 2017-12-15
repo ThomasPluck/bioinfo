@@ -1,9 +1,5 @@
 {
-  "evaluate_deep_variant.ground_truth_bed": "input/test_nist.b37_chr20_100kbp_at_10mb.bed",
-  "evaluate_deep_variant.ground_truth_vcf": "input/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz",
-  "evaluate_deep_variant.reference_fa_gz": "input",
-  "evaluate_deep_variant.uncompressed_ref": "input/ucsc.hg19.chr20.unittest.fasta",
-  "evaluate_deep_variant.alignment_bam": "input/NA12878_S1.chr20.10_10p1mb.bam",
+  "evaluate_deep_variant.input_dir":"input/",
   "evaluate_deep_variant.model_dir": "models/",
   "evaluate_deep_variant.output_dir": "output/",
   "evaluate_deep_variant.example_dir": "examples/"
