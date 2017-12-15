@@ -1,18 +1,13 @@
 workflow evaluate_deep_variant{
 
-    File ground_truth_bed
-    File ground_truth_vcf
-    File reference_fa_gz
-    File uncompressed_ref
-    File alignment_bam
+    File input_dir
     File model_dir
     File output_dir
     File example_dir
 
     call make_examples {
         input:
-            alignment_bam = alignment_bam,
-            reference_fa_gz = reference_fa_gz,
+            input_dir = input_dir,
             example_dir = example_dir
     }
 
@@ -25,7 +20,7 @@ workflow evaluate_deep_variant{
 
     call postprocess {
         input:
-             reference_fa_gz = reference_fa_gz,
+             input_dir = input_dir,
              example_dir = example_dir,
              output_dir = output_dir,
              input_file = call_variants.out
@@ -33,30 +28,27 @@ workflow evaluate_deep_variant{
 
     call evaluate_vcf {
         input:
-            ground_truth_vcf = ground_truth_vcf,
+            input_dir = input_dir,
             predicted_vcf = postprocess.out,
-            ground_truth_bed = ground_truth_bed,
-            uncompressed_ref = uncompressed_ref,
             output_dir = output_dir
     }
 
     output {
-        File out = output_dir + "evaluate_vcf.out"
+        File out = evaluate_vcf.out
     }
 }
 
 task make_examples{
 
-    File alignment_bam
-    File reference_fa_gz
+    File input_dir
     File example_dir
 
     command {
         /opt/deepvariant/bin/make_examples \
             --mode calling \
-            --ref ${reference_fa_gz}/ucsc.hg19.chr20.unittest.fasta.gz \
-            --reads ${reference_fa_gz}/NA12878_S1.chr20.10_10p1mb.bam \
-            --examples ${example_dir}/output.examples.tfrecord \
+            --ref ${input_dir}/ucsc.hg19.chr20.unittest.fasta.gz \
+            --reads ${input_dir}/NA12878_S1.chr20.10_10p1mb.bam \
+            --examples output.examples.tfrecord \
             --regions "chr20:10,000,000-10,010,000"
     }
 
@@ -65,7 +57,7 @@ task make_examples{
     }
 
     output {
-        File out = example_dir+"output.examples.tfrecord"
+        File out = "output.examples.tfrecord"
     }
 }
 
@@ -76,32 +68,31 @@ task call_variants{
     File input_file
 
     command {
-        
         /opt/deepvariant/bin/call_variants \
-            --outfile ${example_dir}/call_variants_output.tfrecord \
+            --outfile call_variants_output.tfrecord \
             --examples ${input_file} \
             --checkpoint ${model_dir}/model.cpkt
     }
 
     runtime {
-        docker: "grc.io/deepvariant-docker/deepvariant"
+        docker: "gcr.io/deepvariant-docker/deepvariant"
     }
 
     output {
-        File out = example_dir + "call_variants_output.tfrecord"
+        File out = "call_variants_output.tfrecord"
     }
 }
 
 task postprocess {
     
-    File reference_fa_gz
+    File input_dir
     File example_dir
     File output_dir
     File input_file
 
     command {
         /opt/deepvariant/bin/postprocess_variants \
-            --ref ${reference_fa_gz}/ucsc.hg19.chr20.unittest.fasta.gz \
+            --ref ${input_dir}/ucsc.hg19.chr20.unittest.fasta.gz \
             --infile ${input_file} \
             --outfile ${output_dir}/output.vcf
     }
@@ -111,24 +102,22 @@ task postprocess {
     }
 
     output {
-        File out = output_dir+"output1.vcf"
+        File out = "output1.vcf"
     }
 }
         
 task evaluate_vcf{
     
-    File ground_truth_vcf
+    File input_dir
     File predicted_vcf
-    File ground_truth_bed
-    File uncompressed_ref
     File output_dir
 
     command {
 
-        "${ground_truth_vcf}" \
+        "${input_dir}/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz" \
         "${predicted_vcf}" \
-        -f "${ground_truth_bed}" \
-        -r "${uncompressed_ref}" \
+        -f "${input_dir}/test_nist.b37_chr20_100kbp_at_10mb.bed" \
+        -r "${input_dir}/ucsc.hg19.chr20.unittest.fasta" \
         -o "eval.output"
 
     }
