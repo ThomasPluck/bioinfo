@@ -71,7 +71,7 @@ task call_variants{
         /opt/deepvariant/bin/call_variants \
             --outfile call_variants_output.tfrecord \
             --examples ${input_file} \
-            --checkpoint ${model_dir}/model.cpkt
+            --checkpoint ${model_dir}/model.ckpt
     }
 
     runtime {
@@ -94,7 +94,7 @@ task postprocess {
         /opt/deepvariant/bin/postprocess_variants \
             --ref ${input_dir}/ucsc.hg19.chr20.unittest.fasta.gz \
             --infile ${input_file} \
-            --outfile ${output_dir}/output.vcf
+            --outfile output.vcf
     }
 
     runtime {
@@ -102,7 +102,7 @@ task postprocess {
     }
 
     output {
-        File out = "output1.vcf"
+        File out = "output.vcf"
     }
 }
         
@@ -127,6 +127,6 @@ task evaluate_vcf{
     }
 
     output {
-        File out = output_dir+"eval.output"
+        File out = "eval.output"
     }
 }
